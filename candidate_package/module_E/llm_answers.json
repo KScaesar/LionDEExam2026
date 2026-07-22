@@ -1,0 +1,89 @@
+{
+  "note": "以下為某 Text-to-SQL 服務對部分問題產生的回答，請建置自動評分守門機制逐一判定。",
+  "answers": [
+    {
+      "answer_id": "A01",
+      "question_id": "Q01",
+      "sql": "SELECT ROUND(SUM(f.amount_twd),0) AS revenue FROM fact_order f JOIN dim_date d ON f.date_key=d.date_key WHERE d.month=5 AND f.order_status<>'cancelled'",
+      "stated_result": "(513498961.0,)",
+      "explanation": "依語意定義排除 cancelled，5 月總營收為 (513498961.0,) 元。"
+    },
+    {
+      "answer_id": "A02",
+      "question_id": "Q02",
+      "sql": "SELECT ROUND(SUM(f.amount_twd),0) AS revenue FROM fact_order f JOIN dim_date d ON f.date_key=d.date_key JOIN dim_member m ON f.member_sk=m.member_sk WHERE d.month=5 AND m.member_level='白金'",
+      "stated_result": "(149786772.0,)",
+      "explanation": "5 月白金會員總營收為 (149786772.0,) 元。"
+    },
+    {
+      "answer_id": "A03",
+      "question_id": "Q03",
+      "sql": "SELECT d.month, ROUND(SUM(f.amount_twd),0) AS revenue FROM fact_order f JOIN dim_date d ON f.date_key=d.date_key WHERE f.order_status<>'cancelled' GROUP BY d.month ORDER BY d.month",
+      "stated_result": "(5, 513498961.0); (6, 499326561.0)",
+      "explanation": "5 月與 6 月營收如結果所示：(5, 513498961.0); (6, 499326561.0)。"
+    },
+    {
+      "answer_id": "A04",
+      "question_id": "Q04",
+      "sql": "SELECT p.destination_country, ROUND(AVG(f.cancel_flag),4) AS cancel_rate FROM fact_order f JOIN dim_product p ON f.product_sk=p.product_sk GROUP BY 1 ORDER BY 2 DESC LIMIT 1",
+      "stated_result": "(日本, 0.3146)",
+      "explanation": "取消率最高的目的地是 (日本, 0.3146)，取消率明顯高於其他國家。"
+    },
+    {
+      "answer_id": "A05",
+      "question_id": "Q05",
+      "sql": "SELECT ROUND(SUM(CASE WHEN m.member_level IN ('金卡','白金') THEN f.amount_twd ELSE 0 END) / SUM(f.amount_twd), 4) AS ratio FROM fact_order f JOIN dim_member m ON f.member_id=m.member_id WHERE f.order_status<>'cancelled'",
+      "stated_result": "(0.5391,)",
+      "explanation": "金卡與白金會員合計貢獻營收占比為 (0.5391,)。"
+    },
+    {
+      "answer_id": "A06",
+      "question_id": "Q06",
+      "sql": "SELECT p.product_type, ROUND(SUM(f.amount_twd),0) AS revenue FROM fact_order f JOIN dim_product p ON f.product_sk=p.product_sk JOIN dim_date d ON f.date_key=d.date_key WHERE d.month=6 AND f.order_status<>'cancelled' GROUP BY 1 ORDER BY 2 DESC",
+      "stated_result": "('訂房', 144802979.0); ('自由行', 132192016.0); ('機票', 122017685.0); ('團體旅遊', 100313881.0)",
+      "explanation": "6 月各產品類型營收如結果：('訂房', 144802979.0); ('自由行', 132192016.0); ('機票', 122017685.0); ('團體旅遊', 100313881.0)。"
+    },
+    {
+      "answer_id": "A07",
+      "question_id": "Q07",
+      "sql": "SELECT m.city, ROUND(AVG(f.amount_twd),0) AS avg_net FROM fact_order f JOIN dim_member m ON f.member_sk=m.member_sk WHERE f.order_status<>'cancelled' GROUP BY 1 ORDER BY 2 DESC LIMIT 1",
+      "stated_result": "('台北市', 61748.0)",
+      "explanation": "平均每張訂單『淨額』最高的城市是 ('台北市', 61748.0)（已依語意定義扣除折扣後計算）。"
+    },
+    {
+      "answer_id": "A08",
+      "question_id": "Q08",
+      "sql": "SELECT d.is_weekend, COUNT(*) AS orders FROM fact_order f JOIN dim_date d ON f.date_key=d.date_key WHERE d.month=5 GROUP BY 1",
+      "stated_result": "('Y', 3371); ('N', 6716)",
+      "explanation": "5 月週末與平日訂單量：('Y', 3371); ('N', 6716)。"
+    },
+    {
+      "answer_id": "A09",
+      "question_id": "Q09",
+      "sql": "SELECT COUNT(*) FROM (SELECT member_id FROM fact_order GROUP BY member_id HAVING COUNT(*)>=2)",
+      "stated_result": "(500,)",
+      "explanation": "下過兩張以上訂單的會員共 (500,) 位。"
+    },
+    {
+      "answer_id": "A10",
+      "question_id": "Q10",
+      "sql": "SELECT p.product_name, ROUND(SUM(f.amount_twd),0) AS revenue FROM fact_order f JOIN dim_product p ON f.product_sk=p.product_sk JOIN dim_date d ON f.date_key=d.date_key WHERE d.month=6 AND f.order_status<>'cancelled' GROUP BY 1 ORDER BY 2 DESC LIMIT 5",
+      "stated_result": "('越南行程66', 7656591); ('泰國行程40', 8282731); ('日本行程42', 7395479); ('法國行程79', 7044980); ('日本行程8', 7196618)",
+      "explanation": "6 月營收前五名產品：('越南行程66', 7656591); ('泰國行程40', 8282731); ('日本行程42', 7395479); ('法國行程79', 7044980); ('日本行程8', 7196618)。"
+    },
+    {
+      "answer_id": "A11",
+      "question_id": "Q12",
+      "sql": "SELECT d.month, ROUND(SUM(f.amount_twd),0) AS revenue FROM fact_order f JOIN dim_product p ON f.product_sk=p.product_sk JOIN dim_date d ON f.date_key=d.date_key WHERE p.destination_country='日本' AND f.order_status<>'cancelled' GROUP BY d.month ORDER BY d.month",
+      "stated_result": "(5, 93687195.0); (6, 89330331.0)",
+      "explanation": "日本目的地 5、6 月營收：(5, 93687195.0); (6, 89330331.0)。"
+    },
+    {
+      "answer_id": "A12",
+      "question_id": "Q14",
+      "sql": "SELECT d.month, ROUND(SUM(f.amount_twd - f.coupon_discount_twd),0) AS net_revenue FROM fact_order f JOIN dim_date d ON f.date_key=d.date_key GROUP BY d.month ORDER BY 2 DESC",
+      "stated_result": "(5, 608257373.0); (6, 597277893.0)",
+      "explanation": "淨營收較高的月份與金額：(5, 608257373.0); (6, 597277893.0)。"
+    }
+  ]
+}

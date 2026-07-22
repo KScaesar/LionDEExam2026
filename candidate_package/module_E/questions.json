@@ -1,0 +1,71 @@
+{
+  "semantic_definitions": {
+    "營收": "amount_twd 之總和，一律排除 order_status='cancelled' 的訂單。",
+    "淨營收": "SUM(amount_twd - coupon_discount_twd)，一律排除 cancelled。",
+    "取消率": "cancelled 訂單數 ÷ 全部訂單數。",
+    "平均訂單淨額": "AVG(amount_twd - coupon_discount_twd)，排除 cancelled。",
+    "會員屬性": "查詢會員屬性（等級、城市）時，須依訂單日期關聯 dim_member 當時有效的版本（full_date BETWEEN valid_from AND valid_to）；查『目前』屬性才用 is_current='Y'。"
+  },
+  "questions": [
+    {
+      "question_id": "Q01",
+      "question": "2026 年 5 月的總營收是多少（TWD）？"
+    },
+    {
+      "question_id": "Q02",
+      "question": "2026 年 5 月白金會員貢獻的總營收是多少（TWD）？"
+    },
+    {
+      "question_id": "Q03",
+      "question": "5 月與 6 月的營收各是多少？趨勢是上升還是下降？"
+    },
+    {
+      "question_id": "Q04",
+      "question": "哪個目的地國家的訂單取消率最高？"
+    },
+    {
+      "question_id": "Q05",
+      "question": "金卡與白金會員合計貢獻的營收占全體營收的比例是多少？"
+    },
+    {
+      "question_id": "Q06",
+      "question": "2026 年 6 月各產品類型的營收分別是多少？"
+    },
+    {
+      "question_id": "Q07",
+      "question": "哪個城市的會員平均每張訂單淨額最高？"
+    },
+    {
+      "question_id": "Q08",
+      "question": "5 月週末與平日的訂單量各是多少？"
+    },
+    {
+      "question_id": "Q09",
+      "question": "下過兩張以上訂單的會員有幾位？"
+    },
+    {
+      "question_id": "Q10",
+      "question": "2026 年 6 月營收最高的前 5 個產品是哪些？"
+    },
+    {
+      "question_id": "Q11",
+      "question": "取消訂單與未取消訂單的平均折扣金額各是多少？"
+    },
+    {
+      "question_id": "Q12",
+      "question": "目的地為日本的訂單，5 月與 6 月營收各是多少？"
+    },
+    {
+      "question_id": "Q13",
+      "question": "各會員等級的平均訂單金額是多少？"
+    },
+    {
+      "question_id": "Q14",
+      "question": "5 月和 6 月哪個月的淨營收比較高？"
+    },
+    {
+      "question_id": "Q15",
+      "question": "全部訂單中狀態為 completed 的比例是多少？"
+    }
+  ]
+}
