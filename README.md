@@ -1,3 +1,20 @@
+## 開發環境快速建置
+
+本專案使用 `uv` 進行 Python 版本與依賴套件管理。預設已安裝 `uv` 時，請在專案根目錄執行：
+
+```bash
+# 安裝 Python 3.13.11 虛擬環境與依賴套件
+uv sync
+```
+
+執行任何 Python 腳本請透過 `uv run`：
+
+```bash
+uv run python candidate_package/buggy_pipeline.py
+```
+
+---
+
 # 資料工程師 Take-home — 考題資料包
 
 請先閱讀隨附的考題卷（`prd.md`），本 README 僅說明資料包內容。

@@ -2,6 +2,9 @@
 .vscode/**
 .idea/**
 
+raw_events/
+ref/
+
 *keys/**
 !keys/example*
 
