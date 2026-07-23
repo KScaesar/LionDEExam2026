@@ -4,26 +4,28 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = "==3.13.11"
 dependencies = [
-    "duckdb==1.5.5",
-    "numpy==2.5.1",
-    "pandas==3.0.3",
-    "pyspark==4.2.0",
+  "duckdb==1.5.5",
+  "numpy==2.5.1",
+  "pandas==3.0.3",
+  "polars==1.43.0",
+  "pyarrow==25.0.0",
+  "pyspark==4.2.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest==9.1.1",
 ]
 
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.pytest.ini_options]
+pythonpath = ["candidate_package"]
+
 [tool.setuptools.packages.find]
 where = ["candidate_package"]
 
 [tool.setuptools.package-dir]
 "" = "candidate_package"
-
-[tool.pytest.ini_options]
-pythonpath = ["candidate_package"]
-
-[dependency-groups]
-dev = [
-    "pytest==9.1.1",
-]

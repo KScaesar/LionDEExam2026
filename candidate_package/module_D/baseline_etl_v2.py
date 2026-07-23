@@ -51,34 +51,48 @@ def _read_and_filter_file(file_path):
 
 def main(events_dir="raw_events", ref_dir="ref", out_path="daily_country_revenue.csv"):
     t0 = time.time()
+    checkpoints = []
+
+    def mark(label):
+        now = time.time()
+        checkpoints.append((label, now))
+        prev = checkpoints[-2][1] if len(checkpoints) > 1 else t0
+        print(f"[TIME] {label}: {now - prev:.3f}s (cumulative {now - t0:.3f}s)")
 
     # 讀取參考主檔
     products = pd.read_csv(os.path.join(ref_dir, "products.csv"))
     fx = pd.read_csv(os.path.join(ref_dir, "fx_rates.csv"))
+    mark("01_read_ref")
 
     # 併行讀取事件檔案並進行提早過濾
     files = sorted(glob.glob(os.path.join(events_dir, "events_*.csv")))
     max_workers = min(os.cpu_count() or 4, len(files)) if files else 1
+    mark("02_list_files")
 
     with ProcessPoolExecutor(max_workers=max_workers) as pool:
         dfs = list(pool.map(_read_and_filter_file, files, chunksize=10))
+    mark("03_parallel_read_filter(io+cpu)")
 
     # 一次性 concat 合併，避免邊迭代邊 concat
     if dfs:
         paid = pd.concat(dfs, ignore_index=True)
     else:
         paid = pd.DataFrame(columns=["event_id", "product_id", "currency", "amount", "event_date"])
+    mark("04_concat")
 
     # 對 event_id 設置 index 以便於去重複
     paid = paid.set_index("event_id")
     paid = paid[~paid.index.duplicated(keep="first")].reset_index()
+    mark("05_dedup_index")
 
     # 向量化預聚合：先依 (event_date, currency, product_id) 聚合金額，巨幅降低後續運算資料量
     agg = paid.groupby(["event_date", "currency", "product_id"], as_index=False)["amount"].sum()
+    mark("06_pre_aggregate(groupby)")
 
     # 向量化關聯 products 取得 destination_country
     prod_country_map = dict(zip(products["product_id"], products["destination_country"]))
     agg["destination_country"] = agg["product_id"].map(prod_country_map).fillna("UNKNOWN")
+    mark("07_country_map")
 
     # 向量化關聯 fx 換算 TWD
     agg = agg.merge(
@@ -89,6 +103,7 @@ def main(events_dir="raw_events", ref_dir="ref", out_path="daily_country_revenue
     )
     agg["rate_to_twd"] = agg["rate_to_twd"].fillna(1.0)
     agg["revenue_twd"] = agg["amount"] * agg["rate_to_twd"]
+    mark("08_fx_merge_and_calc(join)")
 
     # 二級聚合：(event_date, destination_country) 排序並輸出
     result = (
@@ -98,7 +113,10 @@ def main(events_dir="raw_events", ref_dir="ref", out_path="daily_country_revenue
         .reset_index(drop=True)
     )
     result["revenue_twd"] = result["revenue_twd"].round(2)
+    mark("09_final_aggregate_sort")
+
     result.to_csv(out_path, index=False, encoding="utf-8-sig")
+    mark("10_write_csv(io)")
 
     elapsed = time.time() - t0
     print(f"[CHECKSUM] rows={len(result)} total_twd={result['revenue_twd'].sum():.2f}")
