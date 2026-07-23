@@ -29,14 +29,6 @@ import time
 
 import polars as pl
 
-EVENT_COLUMNS = [
-    "event_id",
-    "product_id",
-    "event_type",
-    "event_ts",
-    "currency",
-    "amount",
-]
 EVENT_SCHEMA_OVERRIDES = {
     "event_id": pl.Utf8,
     "product_id": pl.Utf8,
@@ -45,6 +37,7 @@ EVENT_SCHEMA_OVERRIDES = {
     "currency": pl.Utf8,
     "amount": pl.Float64,
 }
+EVENT_COLUMNS = list(EVENT_SCHEMA_OVERRIDES.keys())
 
 
 # --------------------------------------------------------------------------
@@ -52,19 +45,19 @@ EVENT_SCHEMA_OVERRIDES = {
 # --------------------------------------------------------------------------
 
 
-def read_reference_data(ref_dir):
+def read_reference_data(ref_dir: str) -> tuple[pl.DataFrame, pl.DataFrame]:
     """讀取 products / fx_rates 參考主檔"""
     products = pl.read_csv(os.path.join(ref_dir, "products.csv"))
     fx = pl.read_csv(os.path.join(ref_dir, "fx_rates.csv"))
     return products, fx
 
 
-def list_event_files(events_dir):
+def list_event_files(events_dir: str) -> list[str]:
     """列出事件檔案，排序以確保後續去重 keep='first' 的結果具備決定性"""
     return sorted(glob.glob(os.path.join(events_dir, "events_*.csv")))
 
 
-def read_and_filter_events(files):
+def read_and_filter_events(files: list[str]) -> pl.DataFrame:
     """polars 原生多執行緒讀取 + lazy 欄位剪枝／提早過濾 paid 事件"""
     if not files:
         return pl.DataFrame(
@@ -87,7 +80,7 @@ def read_and_filter_events(files):
     return paid_lf.collect()
 
 
-def write_result(result, out_path):
+def write_result(result: pl.DataFrame, out_path: str) -> None:
     """寫出最終結果，含 UTF-8 BOM 以相容 Excel"""
     result.write_csv(out_path, include_bom=True)
 
@@ -97,12 +90,12 @@ def write_result(result, out_path):
 # --------------------------------------------------------------------------
 
 
-def dedup_events(paid):
+def dedup_events(paid: pl.DataFrame) -> pl.DataFrame:
     """對 event_id 去重，保留每個 event_id 第一次出現的紀錄"""
     return paid.unique(subset=["event_id"], keep="first", maintain_order=True)
 
 
-def pre_aggregate(paid):
+def pre_aggregate(paid: pl.DataFrame) -> pl.DataFrame:
     """一級預聚合：依 (event_date, currency, product_id) 加總金額，縮小後續運算資料量
 
     SUM 具備可分配性（distributive）：先在細粒度 (event_date, currency, product_id) 加總，
@@ -115,7 +108,7 @@ def pre_aggregate(paid):
     )
 
 
-def join_country(agg, products):
+def join_country(agg: pl.DataFrame, products: pl.DataFrame) -> pl.DataFrame:
     """關聯 products 取得 destination_country，缺漏補 UNKNOWN"""
     return agg.join(
         products.select(["product_id", "destination_country"]),
@@ -124,7 +117,7 @@ def join_country(agg, products):
     ).with_columns(pl.col("destination_country").fill_null("UNKNOWN"))
 
 
-def join_fx_and_calc_revenue(agg, fx):
+def join_fx_and_calc_revenue(agg: pl.DataFrame, fx: pl.DataFrame) -> pl.DataFrame:
     """關聯 fx_rates 換算 TWD，缺漏匯率視為 1.0（原幣即 TWD）"""
     agg = agg.join(
         fx.select(["rate_date", "currency", "rate_to_twd"]),
@@ -137,7 +130,7 @@ def join_fx_and_calc_revenue(agg, fx):
     )
 
 
-def final_aggregate(agg):
+def final_aggregate(agg: pl.DataFrame) -> pl.DataFrame:
     """二級聚合：依 (event_date, destination_country) 加總 TWD 營收，排序並四捨五入
 
     一級預聚合是以 product_id 為粒度，但多個 product_id 可能對應到同一個
@@ -158,11 +151,15 @@ def final_aggregate(agg):
 # --------------------------------------------------------------------------
 
 
-def main(events_dir="raw_events", ref_dir="ref", out_path="daily_country_revenue.csv"):
+def main(
+    events_dir: str = "raw_events",
+    ref_dir: str = "ref",
+    out_path: str = "daily_country_revenue.csv",
+) -> None:
     t0 = time.time()
-    checkpoints = []
+    checkpoints: list[tuple[str, float]] = []
 
-    def mark(label):
+    def mark(label: str) -> None:
         now = time.time()
         checkpoints.append((label, now))
         prev = checkpoints[-2][1] if len(checkpoints) > 1 else t0
